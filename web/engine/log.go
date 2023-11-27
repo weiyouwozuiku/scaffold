@@ -20,8 +20,11 @@ func NewLogger() error {
 type LogFuncWithCtx func(ctx context.Context, prefix string, format string, args ...any)
 
 func (l *logger) Errorf(ctx context.Context, prefix string, format string, args ...any) {
-	l.log.Log(ctx, slog.LevelError, prefix, args...)
+	l.log.With("traceId", ctx.Value(TraceKey)).Log(ctx, slog.LevelError, prefix, args...)
 }
 func (l *logger) Infof(ctx context.Context, prefix string, format string, args ...any) {
-	l.log.Log(ctx, slog.LevelInfo, prefix, args...)
+	l.log.With("traceId", ctx.Value(TraceKey)).Log(ctx, slog.LevelInfo, prefix, args...)
+}
+func (l *logger) Warnf(ctx context.Context, prefix string, format string, args ...any) {
+	l.log.With("traceId", ctx.Value(TraceKey)).Log(ctx, slog.LevelWarn, prefix, args...)
 }

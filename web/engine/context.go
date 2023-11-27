@@ -2,13 +2,20 @@ package engine
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 type H map[string]any
+
+type traceKey struct{}
+
+var TraceKey traceKey
 
 type Context struct {
 	// 请求相关
@@ -24,16 +31,35 @@ type Context struct {
 	// 响应信息
 	StatusCode int
 
-	Ctx context.Context
+	TimeStamp time.Time
+	Ctx       context.Context
+}
+
+// generateTraceID 生成一个 OpenTelemetry 规范的 Trace ID
+func generateTraceID() string {
+	// 生成 16 字节的随机数
+	traceIDBytes := make([]byte, 16)
+	rand.Read(traceIDBytes)
+
+	// 将随机数转换为十六进制字符串
+	traceID := hex.EncodeToString(traceIDBytes)
+	return traceID
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
+	trace := ""
+	if req.Header.Get("trace") != "" {
+		trace = req.Header.Get("trace")
+	} else {
+		trace = generateTraceID()
+	}
 	return &Context{
-		Req:    req,
-		Writer: w,
-		Path:   req.URL.Path,
-		Method: req.Method,
-		Ctx:    context.Background(),
+		Req:       req,
+		Writer:    w,
+		Path:      req.URL.Path,
+		Method:    req.Method,
+		TimeStamp: time.Now(),
+		Ctx:       context.WithValue(context.Background(), TraceKey, trace),
 	}
 }
 func (c *Context) Param(key string) string {
