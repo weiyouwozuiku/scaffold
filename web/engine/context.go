@@ -1,13 +1,16 @@
 package engine
 
 import (
+	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math/rand"
+	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -35,15 +38,47 @@ type Context struct {
 	Ctx       context.Context
 }
 
-// generateTraceID 生成一个 OpenTelemetry 规范的 Trace ID
-func generateTraceID() string {
-	// 生成 16 字节的随机数
-	traceIDBytes := make([]byte, 16)
-	rand.Read(traceIDBytes)
+const (
+	HEADER_RID = "Header-Rid"
+)
 
-	// 将随机数转换为十六进制字符串
-	traceID := hex.EncodeToString(traceIDBytes)
-	return traceID
+func GetLocalIP() string {
+	ip := "127.0.0.1"
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ip
+	}
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				ip = ipnet.IP.String()
+				break
+			}
+		}
+	}
+
+	return ip
+}
+
+// generateTraceID 生成一个 OpenTelemetry 规范的 Trace ID
+func genTraceID() string {
+
+	ip := GetLocalIP()
+
+	now := time.Now()
+	timestamp := uint32(now.Unix())
+	timeNano := now.UnixNano()
+	pid := os.Getpid()
+	b := bytes.Buffer{}
+
+	b.WriteString(hex.EncodeToString(net.ParseIP(ip).To4()))
+	b.WriteString(fmt.Sprintf("%x", timestamp&0xffffffff))
+	b.WriteString(fmt.Sprintf("%04x", timeNano&0xffff))
+	b.WriteString(fmt.Sprintf("%04x", pid&0xffff))
+	b.WriteString(fmt.Sprintf("%06x", rand.Int31n(1<<24)))
+	b.WriteString("b0")
+
+	return b.String()
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -51,7 +86,7 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 	if req.Header.Get("trace") != "" {
 		trace = req.Header.Get("trace")
 	} else {
-		trace = generateTraceID()
+		trace = genTraceID()
 	}
 	return &Context{
 		Req:       req,

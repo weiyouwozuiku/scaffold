@@ -11,3 +11,6 @@ func newRouter() *router {
 		handlers: make(map[string]HandlerFunc),
 	}
 }
+func (r *router) addRouter(method, pattern string, hanlder HandlerFunc) {
+
+}
