@@ -16,11 +16,6 @@ func newRouter() *router {
 		handlers: make(map[string]HandlerFunc),
 	}
 }
-<<<<<<< Updated upstream
-func (r *router) addRouter(method, pattern string, hanlder HandlerFunc) {
-
-}
-=======
 
 func parsePattern(pattern string) []string {
 	info := strings.Split(pattern, "/")
@@ -70,4 +65,3 @@ func (r *router) handler(c *Context) {
 		c.STRING(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
 	}
 }
->>>>>>> Stashed changes
