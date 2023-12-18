@@ -27,9 +27,10 @@ func (n *node) matchChild(part string) *node {
 	return nil
 }
 
-func (n *node) insert(pattern string, parts []string, height int) {
+func (n *node) insert(pattern string, parts []string, height int,handler HandlerFunc) {
 	// 退出递归条件
 	if len(parts) == height {
+		if n.pattern!=""
 		n.pattern = pattern
 		return
 	}
